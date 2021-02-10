@@ -21,12 +21,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <string.h>
 #include <time.h>
 
-#include "smb2.h"
-#include "libsmb2.h"
-#include "libsmb2-raw.h"
-#include "libsmb2-dcerpc.h"
-#include "libsmb2-dcerpc-lsa.h"
-#include "libsmb2-dcerpc-srvsvc.h"
+#include "smb2/smb2.h"
+#include "smb2/libsmb2.h"
+#include "smb2/libsmb2-raw.h"
+#include "smb2/libsmb2-dcerpc.h"
+#include "smb2/libsmb2-dcerpc-lsa.h"
+#include "smb2/libsmb2-dcerpc-srvsvc.h"
 
 #ifndef discard_const
 #define discard_const(ptr) ((void *)((intptr_t)(ptr)))

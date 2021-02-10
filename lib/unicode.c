@@ -40,11 +40,12 @@
 #endif
 
 #include "compat.h"
+#include <errno.h>
 
 #include "portable-endian.h"
 
-#include <smb2.h>
-#include <libsmb2.h>
+#include <smb2/smb2.h>
+#include <smb2/libsmb2.h>
 #include "libsmb2-private.h"
 
 /* Count number of leading 1 bits in the char */
@@ -126,11 +127,13 @@ utf8_to_ucs2(const char *utf8)
 
         len = validate_utf8_str(utf8);
         if (len < 0) {
+                errno=EINVAL;
                 return NULL;
         }
 
         ucs2 = malloc(offsetof(struct ucs2, val) + 2 * len);
         if (ucs2 == NULL) {
+                errno=ENOMEM;
                 return NULL;
         }
 

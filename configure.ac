@@ -1,22 +1,57 @@
+AC_PREREQ([2.58])
 AC_INIT([libsmb2], [3.0.0], [ronniesahlberg@gmail.com])
 
-AC_PREREQ([2.58])
+AC_CONFIG_MACRO_DIR([m4])
+AC_CANONICAL_TARGET
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([-Wall foreign subdir-objects 1.11])
-AC_CANONICAL_HOST
-AC_CONFIG_MACRO_DIR([m4])
 
-m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
 
-dnl  Do not add default CFLAGS in AC_PROG_CC
-: ${CFLAGS=""}
-AC_PROG_CC
-AC_PROG_LIBTOOL
+case $target_os in
+     *android)	arch_sub=android;;
+esac
 
-AM_PROG_CC_C_O
+#debug options support
+AC_ARG_ENABLE([debug],
+    [AS_HELP_STRING([--enable-debug],[debug program by full level(default is no)])])
+
+AC_ARG_ENABLE([release],
+    [AS_HELP_STRING([--enable-release],[release program(default is no)])])
+
+AC_ARG_ENABLE([asan],
+    [AS_HELP_STRING([--enable-asan],[asan program by full level(default is no)])])
+
 
 dnl  We always want 64 bit file offsets
-CFLAGS="${CFLAGS} -D_FILE_OFFSET_BITS=64"
+CPPFLAGS="-D_FILE_OFFSET_BITS=64 $CPPFLAGS"
+
+if test "$ac_env_CFLAGS_set" != set; then
+    if test x$enable_release = xyes;then
+	    CFLAGS="-O2"
+    elif test x$enable_debug = xyes;then
+        CFLAGS="-g3 -ggdb -O0";
+        AC_DEFINE(DEBUG,[ ],[ ])
+    else
+	    CFLAGS="-g -O2"
+    fi
+
+    if test x$enable_asan = xyes;then
+    CFLAGS="$CFLAGS -fsanitize=address -fsanitize-recover=all\
+ -fno-omit-frame-pointer -fno-stack-protector"
+    fi
+
+	if test "$arch_sub" = android;then
+		CFLAGS="$CFLAGS -fPIE -pie"
+	fi
+fi
+
+echo "------------CFLAGS:$CFLAGS"
+echo "------------CPPFLAGS:$CPPFLAGS"
+
+m4_ifdef([AM_PROG_AR], [AM_PROG_AR])
+AC_PROG_CC
+AC_PROG_LIBTOOL
+AM_PROG_CC_C_O
 
 AC_ARG_ENABLE([examples],
               [AS_HELP_STRING([--enable-examples],
@@ -50,7 +85,10 @@ AC_ARG_ENABLE([werror],
               [Disables building with -Werror by default])])
 
 AS_IF([test "$GCC" = "yes"], [
-    WARN_CFLAGS="-Wall -Wshadow -Wno-write-strings -Wstrict-prototypes -Wpointer-arith -Wcast-align -Wno-strict-aliasing"
+    WARN_CFLAGS="-Wall -W\
+ -Wno-unused-parameter\
+ -Wno-unused-result\
+ -Wno-sign-compare"
     AS_IF([test "$enable_werror" != "no"], [
         WARN_CFLAGS="${WARN_CFLAGS} -Werror"
     ])

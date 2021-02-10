@@ -56,11 +56,11 @@
 
 #include "compat.h"
 
-#include "smb2.h"
-#include "libsmb2.h"
-#include "libsmb2-dcerpc.h"
-#include "libsmb2-dcerpc-lsa.h"
-#include "libsmb2-raw.h"
+#include "smb2/smb2.h"
+#include "smb2/libsmb2.h"
+#include "smb2/libsmb2-dcerpc.h"
+#include "smb2/libsmb2-dcerpc-lsa.h"
+#include "smb2/libsmb2-raw.h"
 #include "libsmb2-private.h"
 
 #define LSA_UUID    0x12345778, 0x1234, 0xabcd, 0xef000123456789ab
@@ -86,8 +86,7 @@ lsa_RPC_SID_coder(struct dcerpc_context *dce,
                   void *ptr)
 {
         RPC_SID *sid = ptr;
-        uint64_t count;
-        int i;
+        uint64_t count,i;
 
         count = sid->SubAuthorityCount;
         offset = dcerpc_uint3264_coder(dce, pdu, iov, offset, &count);
@@ -121,8 +120,7 @@ lsa_PRPC_SID_array_coder(struct dcerpc_context *dce,
                          void *ptr)
 {
         PLSAPR_SID_ENUM_BUFFER seb = ptr;
-        uint64_t val;
-        int i;
+        uint64_t val,i;
 
         val = seb->Entries;
         offset = dcerpc_uint32_coder(dce, pdu, iov, offset, &val);
@@ -246,8 +244,7 @@ TN_array_coder(struct dcerpc_context *dce,
                void *ptr)
 {
         LSAPR_TRANSLATED_NAMES_EX *tn = ptr;
-        uint64_t count;
-        int i;
+        uint64_t count,i;
 
         count = tn->Entries;
         offset = dcerpc_uint3264_coder(dce, pdu, iov, offset, &count);
@@ -422,8 +419,7 @@ RDL_DOMAINS_array_coder(struct dcerpc_context *dce,
                         void *ptr)
 {
         LSAPR_REFERENCED_DOMAIN_LIST *rdl = ptr;
-        uint64_t entries;
-        int i;
+        uint64_t entries,i;
 
         entries = rdl->Entries;
         offset = dcerpc_uint3264_coder(dce, pdu, iov, offset, &entries);

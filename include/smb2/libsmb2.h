@@ -19,62 +19,13 @@
 #ifndef _LIBSMB2_H_
 #define _LIBSMB2_H_
 
-#ifdef __cplusplus
-extern "C" {
+#include "libsmb2_pub.h"
+
+__BEGIN_DECLS
+
+#ifndef MAX_ERROR_SIZE
+#define MAX_ERROR_SIZE 256
 #endif
-
-struct smb2_iovec {
-        uint8_t *buf;
-        size_t len;
-        void (*free)(void *);
-};
-        
-struct smb2_context;
-
-/*
- * Generic callback for completion of smb2_*_async().
- * command_data depends on status.
- */
-typedef void (*smb2_command_cb)(struct smb2_context *smb2, int status,
-                                void *command_data, void *cb_data);
-
-/* Stat structure */
-#define SMB2_TYPE_FILE      0x00000000
-#define SMB2_TYPE_DIRECTORY 0x00000001
-#define SMB2_TYPE_LINK      0x00000002
-struct smb2_stat_64 {
-        uint32_t smb2_type;
-        uint32_t smb2_nlink;
-        uint64_t smb2_ino;
-        uint64_t smb2_size;
-	uint64_t smb2_atime;
-	uint64_t smb2_atime_nsec;
-	uint64_t smb2_mtime;
-	uint64_t smb2_mtime_nsec;
-	uint64_t smb2_ctime;
-	uint64_t smb2_ctime_nsec;
-    uint64_t smb2_btime;
-    uint64_t smb2_btime_nsec;
-};
-
-struct smb2_statvfs {
-	uint32_t	f_bsize;
-	uint32_t	f_frsize;
-	uint64_t	f_blocks;
-	uint64_t	f_bfree;
-	uint64_t	f_bavail;
-	uint32_t	f_files;
-	uint32_t	f_ffree;
-	uint32_t	f_favail;
-	uint32_t	f_fsid;
-	uint32_t	f_flag;
-	uint32_t	f_namemax;
-};
-
-struct smb2dirent {
-        const char *name;
-        struct smb2_stat_64 st;
-};
 
 #ifdef _MSC_VER
 #include <winsock2.h>
@@ -82,6 +33,147 @@ typedef SOCKET t_socket;
 #else
 typedef int t_socket;
 #endif
+
+enum smb2_sec
+{
+	SMB2_SEC_UNDEFINED = 0,
+	SMB2_SEC_NTLMSSP,
+	SMB2_SEC_KRB5,
+};
+
+struct smb2_iovec
+{
+	uint8_t *buf;
+	size_t len;
+	void (*free)(void *);
+};
+
+struct smb2_context;
+
+/*
+ * A much more scalable way to use smb2_fd_event_callbacks() to register
+ * callbacks for libsmb2 to call anytime a filedescriptor is changed or when
+ * the  events we are waiting for changes.
+ * This way libsmb2 will do callbacks back into the application to inform
+ * when fd or events change.
+ *
+ * This is suitable when you want to plug libsmb2 into a more sophisticated
+ * eventsystem or if you use epoll() or similar.
+ *
+ * See for smb2-ls-async.c for a trivial example of using these callbacks.
+ */
+#define SMB2_ADD_FD 0
+#define SMB2_DEL_FD 1
+typedef void (*smb2_change_fd_cb)(struct smb2_context *smb2, int fd, int cmd);
+typedef void (*smb2_change_events_cb)(struct smb2_context *smb2, int fd, int events);
+
+/*
+ * Generic callback for completion of smb2_*_async().
+ * command_data depends on status.
+ */
+typedef void (*smb2_command_cb)(struct smb2_context *smb2, int status,
+								void *command_data, void *cb_data);
+
+/* Stat structure */
+#define SMB2_TYPE_FILE 0x00000000
+#define SMB2_TYPE_DIRECTORY 0x00000001
+#define SMB2_TYPE_LINK 0x00000002
+typedef struct smbcontext_threadspecific_t
+{
+	struct smb2_context *_parent;
+	//t_socket fd;
+
+	//t_socket *connecting_fds;
+	//size_t connecting_fds_count;
+	//struct addrinfo *addrinfos;
+	//const struct addrinfo *next_addrinfo;
+
+	//enum smb2_sec sec;
+
+	//uint16_t security_mode;
+	//int use_cached_creds;
+
+	/* Only used with --without-libkrb5 */
+	//char client_challenge[8];
+
+	//smb2_command_cb connect_cb;
+	//void *connect_data;
+
+	// int credits;
+
+	// char client_guid[16];
+
+	// uint32_t tree_id;
+	// uint64_t message_id;
+	// uint64_t session_id;
+	// uint8_t *session_key;
+	// uint8_t session_key_size;
+	/*
+         * For sending PDUs
+         */
+	//struct smb2_pdu *outqueue;
+	//struct smb2_pdu *waitqueue;
+
+	/* Pointer to the current PDU that we are receiving the reply for.
+         * Only valid once the full smb2 header has been received.
+         */
+	//struct smb2_pdu *pdu;
+
+	//char error_string[MAX_ERROR_SIZE];
+
+	/* Open filehandles */
+	//struct smb2fh *fhs;
+	/* Open dirhandles */
+	//struct smb2dir *dirs;
+
+	/* callbacks for the eventsystem */
+	//int events;
+	//smb2_change_fd_cb change_fd;
+	//smb2_change_events_cb change_events;
+
+} smbcontext_threadspecific_t;
+
+struct smb2_stat_64
+{
+	uint32_t smb2_type;
+#if defined(__ANDROID__) && (defined(__USE_FILE_OFFSET64) || defined(__LP64__))
+	uint64_t smb2_nlink;
+#else
+	nlink_t smb2_nlink;
+#endif
+	uint64_t smb2_ino;
+	mode_t st_mode;
+	off_t smb2_size;
+	uint64_t smb2_atime;
+	uint64_t smb2_atime_nsec;
+	uint64_t smb2_mtime;
+	uint64_t smb2_mtime_nsec;
+	uint64_t smb2_ctime;
+	uint64_t smb2_ctime_nsec;
+	uint64_t smb2_btime;
+	uint64_t smb2_btime_nsec;
+};
+
+struct smb2_statvfs
+{
+	uint32_t f_bsize;
+	uint32_t f_frsize;
+	uint64_t f_blocks;
+	uint64_t f_bfree;
+	uint64_t f_bavail;
+	uint32_t f_files;
+	uint32_t f_ffree;
+	uint32_t f_favail;
+	uint32_t f_fsid;
+	uint32_t f_flag;
+	uint32_t f_namemax;
+};
+
+struct smb2dirent
+{
+	const char *name;
+	struct smb2_stat_64 st;
+};
 
 /*
  * Create an SMB2 context.
@@ -145,26 +237,9 @@ int smb2_which_events(struct smb2_context *smb2);
 const t_socket *
 smb2_get_fds(struct smb2_context *smb2, size_t *fd_count, int *timeout);
 
-/*
- * A much more scalable way to use smb2_fd_event_callbacks() to register
- * callbacks for libsmb2 to call anytime a filedescriptor is changed or when
- * the  events we are waiting for changes.
- * This way libsmb2 will do callbacks back into the application to inform
- * when fd or events change.
- *
- * This is suitable when you want to plug libsmb2 into a more sophisticated
- * eventsystem or if you use epoll() or similar.
- *
- * See for smb2-ls-async.c for a trivial example of using these callbacks.
- */
-#define SMB2_ADD_FD 0
-#define SMB2_DEL_FD 1
-typedef void (*smb2_change_fd_cb)(struct smb2_context *smb2, int fd, int cmd);
-typedef void (*smb2_change_events_cb)(struct smb2_context *smb2, int fd,
-                                      int events);
 void smb2_fd_event_callbacks(struct smb2_context *smb2,
-                             smb2_change_fd_cb change_fd,
-                             smb2_change_events_cb change_events);
+							 smb2_change_fd_cb change_fd,
+							 smb2_change_events_cb change_events);
 
 /*
  * Called to process the events when events become available for the smb2
@@ -209,19 +284,20 @@ void smb2_set_timeout(struct smb2_context *smb2, int seconds);
  * Set which version of SMB to negotiate.
  * Default is to let the server pick the version.
  */
-enum smb2_negotiate_version {
-        SMB2_VERSION_ANY  = 0,
-        SMB2_VERSION_ANY2 = 2,
-        SMB2_VERSION_ANY3 = 3,
-        SMB2_VERSION_0202 = 0x0202,
-        SMB2_VERSION_0210 = 0x0210,
-        SMB2_VERSION_0300 = 0x0300,
-        SMB2_VERSION_0302 = 0x0302,
-        SMB2_VERSION_0311 = 0x0311
+enum smb2_negotiate_version
+{
+	SMB2_VERSION_ANY = 0,
+	SMB2_VERSION_ANY2 = 2,
+	SMB2_VERSION_ANY3 = 3,
+	SMB2_VERSION_0202 = 0x0202,
+	SMB2_VERSION_0210 = 0x0210,
+	SMB2_VERSION_0300 = 0x0300,
+	SMB2_VERSION_0302 = 0x0302,
+	SMB2_VERSION_0311 = 0x0311
 };
 
 void smb2_set_version(struct smb2_context *smb2,
-                      enum smb2_negotiate_version version);
+					  enum smb2_negotiate_version version);
 
 /*
  * Set the security mode for the connection.
@@ -263,6 +339,13 @@ void smb2_set_user(struct smb2_context *smb2, const char *user);
  * This function is only needed when libsmb2 is built --without-libkrb5
  */
 void smb2_set_password(struct smb2_context *smb2, const char *password);
+
+/*
+* 从文件获取密码，文件格式为	domain:user:pass
+* 如果file为NULL,则取 smb2->credentials，要不然再从环境变量获取文件路径
+*/
+void smb2_set_password_from_file(struct smb2_context *smb2, char *file);
+
 /*
  * Set the domain when authenticating.
  * This function is only needed when libsmb2 is built --without-libkrb5
@@ -273,7 +356,6 @@ void smb2_set_domain(struct smb2_context *smb2, const char *domain);
  * This function is only needed when libsmb2 is built --without-libkrb5
  */
 void smb2_set_workstation(struct smb2_context *smb2, const char *workstation);
-
 
 /*
  * Returns the client_guid for this context.
@@ -295,7 +377,7 @@ const char *smb2_get_client_guid(struct smb2_context *smb2);
  *   -errno : Failed to establish the connection. Command_data is NULL.
  */
 int smb2_connect_async(struct smb2_context *smb2, const char *server,
-                       smb2_command_cb cb, void *cb_data);
+					   smb2_command_cb cb, void *cb_data);
 
 /*
  * Async call to connect to a share.
@@ -313,10 +395,10 @@ int smb2_connect_async(struct smb2_context *smb2, const char *server,
  *   -errno : Failed to connect to the share. Command_data is NULL.
  */
 int smb2_connect_share_async(struct smb2_context *smb2,
-                             const char *server,
-                             const char *share,
-                             const char *user,
-                             smb2_command_cb cb, void *cb_data);
+							 const char *server,
+							 const char *share,
+							 const char *user,
+							 smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync call to connect to a share.
@@ -326,10 +408,9 @@ int smb2_connect_share_async(struct smb2_context *smb2,
  * 0      : Connected to the share successfully.
  * -errno : Failure.
  */
-int smb2_connect_share(struct smb2_context *smb2,
-                       const char *server,
-                       const char *share,
-                       const char *user);
+int smb2_connect_share(
+	struct smb2_context *smb2, const char *server,
+	const char *share, const char *user);
 
 /*
  * Async call to disconnect from a share/
@@ -346,7 +427,7 @@ int smb2_connect_share(struct smb2_context *smb2,
  *   -errno : Failed to disconnect the share. Command_data is NULL.
  */
 int smb2_disconnect_share_async(struct smb2_context *smb2,
-                                smb2_command_cb cb, void *cb_data);
+								smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync call to disconnect from a share/
@@ -362,12 +443,13 @@ int smb2_disconnect_share(struct smb2_context *smb2);
  */
 const char *smb2_get_error(struct smb2_context *smb2);
 
-struct smb2_url {
-        const char *domain;
-        const char *user;
-        const char *server;
-        const char *share;
-        const char *path;
+struct smb2_url
+{
+	const char *domain;
+	const char *user;
+	const char *server;
+	const char *share;
+	const char *path;
 };
 
 /* Convert an smb2/nt error code into a string */
@@ -410,7 +492,7 @@ struct smb2_pdu;
  * this interface.
  */
 void smb2_add_compound_pdu(struct smb2_context *smb2,
-                           struct smb2_pdu *pdu, struct smb2_pdu *next_pdu);
+						   struct smb2_pdu *pdu, struct smb2_pdu *next_pdu);
 void smb2_free_pdu(struct smb2_context *smb2, struct smb2_pdu *pdu);
 void smb2_queue_pdu(struct smb2_context *smb2, struct smb2_pdu *pdu);
 
@@ -432,9 +514,9 @@ struct smb2dir;
  *          This structure is freed using smb2_closedir().
  * -errno : An error occured.
  *          Command_data is NULL.
- */       
+ */
 int smb2_opendir_async(struct smb2_context *smb2, const char *path,
-                       smb2_command_cb cb, void *cb_data);
+					   smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync opendir()
@@ -458,7 +540,7 @@ void smb2_closedir(struct smb2_context *smb2, struct smb2dir *smb2dir);
  * smb2_readdir() never blocks, thus no async version is needed.
  */
 struct smb2dirent *smb2_readdir(struct smb2_context *smb2,
-                                struct smb2dir *smb2dir);
+								struct smb2dir *smb2dir);
 
 /*
  * rewinddir()
@@ -483,7 +565,7 @@ long smb2_telldir(struct smb2_context *smb2, struct smb2dir *smb2dir);
  * smb2_seekdir() never blocks, thus no async version is needed.
  */
 void smb2_seekdir(struct smb2_context *smb2, struct smb2dir *smb2dir,
-                  long loc);
+				  long loc);
 
 /*
  * OPEN
@@ -512,9 +594,9 @@ struct smb2fh;
  *          This structure is freed using smb2_close().
  * -errno : An error occured.
  *          Command_data is NULL.
- */       
+ */
 int smb2_open_async(struct smb2_context *smb2, const char *path, int flags,
-                    smb2_command_cb cb, void *cb_data);
+					smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync open()
@@ -541,7 +623,7 @@ struct smb2fh *smb2_open(struct smb2_context *smb2, const char *path, int flags)
  * Command_data is always NULL.
  */
 int smb2_close_async(struct smb2_context *smb2, struct smb2fh *fh,
-                     smb2_command_cb cb, void *cb_data);
+					 smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync close()
@@ -566,7 +648,7 @@ int smb2_close(struct smb2_context *smb2, struct smb2fh *fh);
  * Command_data is always NULL.
  */
 int smb2_fsync_async(struct smb2_context *smb2, struct smb2fh *fh,
-                     smb2_command_cb cb, void *cb_data);
+					 smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync fsync()
@@ -598,10 +680,10 @@ uint32_t smb2_get_max_write_size(struct smb2_context *smb2);
  * -errno : An error occured.
  *
  * Command_data is always NULL.
- */       
+ */
 int smb2_pread_async(struct smb2_context *smb2, struct smb2fh *fh,
-                     uint8_t *buf, uint32_t count, uint64_t offset,
-                     smb2_command_cb cb, void *cb_data);
+					 uint8_t *buf, uint32_t count, uint64_t offset,
+					 smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync pread()
@@ -609,7 +691,7 @@ int smb2_pread_async(struct smb2_context *smb2, struct smb2fh *fh,
  * server supports.
  */
 int smb2_pread(struct smb2_context *smb2, struct smb2fh *fh,
-               uint8_t *buf, uint32_t count, uint64_t offset);
+			   uint8_t *buf, uint32_t count, uint64_t offset);
 
 /*
  * PWRITE
@@ -631,8 +713,8 @@ int smb2_pread(struct smb2_context *smb2, struct smb2fh *fh,
  * Command_data is always NULL.
  */
 int smb2_pwrite_async(struct smb2_context *smb2, struct smb2fh *fh,
-                      const uint8_t *buf, uint32_t count, uint64_t offset,
-                      smb2_command_cb cb, void *cb_data);
+					  const uint8_t *buf, uint32_t count, uint64_t offset,
+					  smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync pwrite()
@@ -640,7 +722,7 @@ int smb2_pwrite_async(struct smb2_context *smb2, struct smb2fh *fh,
  * server supports.
  */
 int smb2_pwrite(struct smb2_context *smb2, struct smb2fh *fh,
-                const uint8_t *buf, uint32_t count, uint64_t offset);
+				const uint8_t *buf, uint32_t count, uint64_t offset);
 
 /*
  * READ
@@ -660,14 +742,14 @@ int smb2_pwrite(struct smb2_context *smb2, struct smb2fh *fh,
  * Command_data is always NULL.
  */
 int smb2_read_async(struct smb2_context *smb2, struct smb2fh *fh,
-                    uint8_t *buf, uint32_t count,
-                    smb2_command_cb cb, void *cb_data);
+					uint8_t *buf, uint32_t count,
+					smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync read()
  */
 int smb2_read(struct smb2_context *smb2, struct smb2fh *fh,
-              uint8_t *buf, uint32_t count);
+			  uint8_t *buf, uint32_t count);
 
 /*
  * WRITE
@@ -687,14 +769,14 @@ int smb2_read(struct smb2_context *smb2, struct smb2fh *fh,
  * Command_data is always NULL.
  */
 int smb2_write_async(struct smb2_context *smb2, struct smb2fh *fh,
-                     const uint8_t *buf, uint32_t count,
-                     smb2_command_cb cb, void *cb_data);
+					 const uint8_t *buf, uint32_t count,
+					 smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync write()
  */
 int smb2_write(struct smb2_context *smb2, struct smb2fh *fh,
-               const uint8_t *buf, uint32_t count);
+			   const uint8_t *buf, uint32_t count);
 
 /*
  * Sync lseek()
@@ -705,7 +787,7 @@ int smb2_write(struct smb2_context *smb2, struct smb2fh *fh,
  * (it will not call fstat to discover the current file size and will not block)
  */
 int64_t smb2_lseek(struct smb2_context *smb2, struct smb2fh *fh,
-                   int64_t offset, int whence, uint64_t *current_offset);
+				   int64_t offset, int whence, uint64_t *current_offset);
 
 /*
  * UNLINK
@@ -725,7 +807,7 @@ int64_t smb2_lseek(struct smb2_context *smb2, struct smb2fh *fh,
  * Command_data is always NULL.
  */
 int smb2_unlink_async(struct smb2_context *smb2, const char *path,
-                      smb2_command_cb cb, void *cb_data);
+					  smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync unlink()
@@ -750,7 +832,7 @@ int smb2_unlink(struct smb2_context *smb2, const char *path);
  * Command_data is always NULL.
  */
 int smb2_rmdir_async(struct smb2_context *smb2, const char *path,
-                     smb2_command_cb cb, void *cb_data);
+					 smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync rmdir()
@@ -775,7 +857,7 @@ int smb2_rmdir(struct smb2_context *smb2, const char *path);
  * Command_data is always NULL.
  */
 int smb2_mkdir_async(struct smb2_context *smb2, const char *path,
-                     smb2_command_cb cb, void *cb_data);
+					 smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync mkdir()
@@ -798,13 +880,13 @@ int smb2_mkdir(struct smb2_context *smb2, const char *path);
  * -errno : An error occured.
  */
 int smb2_statvfs_async(struct smb2_context *smb2, const char *path,
-                       struct smb2_statvfs *statvfs,
-                       smb2_command_cb cb, void *cb_data);
+					   struct smb2_statvfs *statvfs,
+					   smb2_command_cb cb, void *cb_data);
 /*
  * Sync statvfs()
  */
 int smb2_statvfs(struct smb2_context *smb2, const char *path,
-                 struct smb2_statvfs *statvfs);
+				 struct smb2_statvfs *statvfs);
 
 /*
  * FSTAT
@@ -822,13 +904,13 @@ int smb2_statvfs(struct smb2_context *smb2, const char *path,
  * -errno : An error occured.
  */
 int smb2_fstat_async(struct smb2_context *smb2, struct smb2fh *fh,
-                     struct smb2_stat_64 *st,
-                     smb2_command_cb cb, void *cb_data);
+					 struct smb2_stat_64 *st,
+					 smb2_command_cb cb, void *cb_data);
 /*
  * Sync fstat()
  */
 int smb2_fstat(struct smb2_context *smb2, struct smb2fh *fh,
-               struct smb2_stat_64 *st);
+			   struct smb2_stat_64 *st);
 
 /*
  * Async stat()
@@ -843,13 +925,13 @@ int smb2_fstat(struct smb2_context *smb2, struct smb2fh *fh,
  * -errno : An error occured.
  */
 int smb2_stat_async(struct smb2_context *smb2, const char *path,
-                    struct smb2_stat_64 *st,
-                    smb2_command_cb cb, void *cb_data);
+					struct smb2_stat_64 *st,
+					smb2_command_cb cb, void *cb_data);
 /*
  * Sync stat()
  */
 int smb2_stat(struct smb2_context *smb2, const char *path,
-              struct smb2_stat_64 *st);
+			  struct smb2_stat_64 *st);
 
 /*
  * Async rename()
@@ -864,14 +946,14 @@ int smb2_stat(struct smb2_context *smb2, const char *path,
  * -errno : An error occured.
  */
 int smb2_rename_async(struct smb2_context *smb2, const char *oldpath,
-                      const char *newpath, smb2_command_cb cb, void *cb_data);
+					  const char *newpath, smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync rename()
  */
 int smb2_rename(struct smb2_context *smb2, const char *oldpath,
-              const char *newpath);
-        
+				const char *newpath);
+
 /*
  * Async truncate()
  *
@@ -885,7 +967,7 @@ int smb2_rename(struct smb2_context *smb2, const char *oldpath,
  * -errno : An error occured.
  */
 int smb2_truncate_async(struct smb2_context *smb2, const char *path,
-                        uint64_t length, smb2_command_cb cb, void *cb_data);
+						uint64_t length, smb2_command_cb cb, void *cb_data);
 /*
  * Sync truncate()
  * Function returns
@@ -893,7 +975,7 @@ int smb2_truncate_async(struct smb2_context *smb2, const char *path,
  * -errno : An error occured.
  */
 int smb2_truncate(struct smb2_context *smb2, const char *path,
-                  uint64_t length);
+				  uint64_t length);
 
 /*
  * Async ftruncate()
@@ -908,7 +990,7 @@ int smb2_truncate(struct smb2_context *smb2, const char *path,
  * -errno : An error occured.
  */
 int smb2_ftruncate_async(struct smb2_context *smb2, struct smb2fh *fh,
-                         uint64_t length, smb2_command_cb cb, void *cb_data);
+						 uint64_t length, smb2_command_cb cb, void *cb_data);
 /*
  * Sync ftruncate()
  * Function returns
@@ -916,8 +998,7 @@ int smb2_ftruncate_async(struct smb2_context *smb2, struct smb2fh *fh,
  * -errno : An error occured.
  */
 int smb2_ftruncate(struct smb2_context *smb2, struct smb2fh *fh,
-                   uint64_t length);
-
+				   uint64_t length);
 
 /*
  * READLINK
@@ -935,7 +1016,7 @@ int smb2_ftruncate(struct smb2_context *smb2, struct smb2fh *fh,
  * -errno : An error occured.
  */
 int smb2_readlink_async(struct smb2_context *smb2, const char *path,
-                        smb2_command_cb cb, void *cb_data);
+						smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync readlink()
@@ -955,7 +1036,7 @@ int smb2_readlink(struct smb2_context *smb2, const char *path, char *buf, uint32
  * -errno : An error occured.
  */
 int smb2_echo_async(struct smb2_context *smb2,
-                    smb2_command_cb cb, void *cb_data);
+					smb2_command_cb cb, void *cb_data);
 
 /*
  * Sync echo()
@@ -966,6 +1047,11 @@ int smb2_echo_async(struct smb2_context *smb2,
  */
 int smb2_echo(struct smb2_context *smb2);
 
+struct smb2fh *smb2_dupfh(struct smb2fh *fh);
+
+int smbcontext_init_threadspecific(struct smb2_context *_ct);
+smbcontext_threadspecific_t *smbcontext_get_threadspecific(struct smb2_context *);
+
 /*
  * Some symbols have moved over to a different header file to allow better
  * separation between dcerpc and smb2, so we need to include this header
@@ -973,7 +1059,5 @@ int smb2_echo(struct smb2_context *smb2);
  */
 #include <smb2/libsmb2-dcerpc-srvsvc.h>
 
-#ifdef __cplusplus
-}
-#endif
+__END_DECLS
 #endif /* !_LIBSMB2_H_ */

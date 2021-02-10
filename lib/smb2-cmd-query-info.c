@@ -43,8 +43,8 @@
 
 #include "compat.h"
 
-#include "smb2.h"
-#include "libsmb2.h"
+#include "smb2/smb2.h"
+#include "smb2/libsmb2.h"
 #include "libsmb2-private.h"
 
 
@@ -59,6 +59,7 @@ smb2_encode_query_info_request(struct smb2_context *smb2,
 
         if (req->input_buffer_length > 0) {
                 smb2_set_error(smb2, "No support for input buffers, yet");
+                errno=EINVAL;
                 return -1;
         }
 
@@ -66,6 +67,7 @@ smb2_encode_query_info_request(struct smb2_context *smb2,
         buf = calloc(len, sizeof(uint8_t));
         if (buf == NULL) {
                 smb2_set_error(smb2, "Failed to allocate query buffer");
+                errno=ENOMEM;
                 return -1;
         }
         

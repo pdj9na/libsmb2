@@ -18,46 +18,18 @@
 #ifndef __smb2_slist_h__
 #define __smb2_slist_h__
 
-#define SMB2_LIST_ADD(list, item) \
-	do {							\
-		(item)->next = (*list);				\
-		(*list) = (item);				\
-	} while (0);
+#include <stddef.h>
 
-#define SMB2_LIST_ADD_END(list, item)	\
-	if ((*list) == NULL) {	 				\
-	   SMB2_LIST_ADD((list), (item));			\
-	} else {						\
-	   void *head = (*list);				\
-	   while ((*list)->next)				\
-	     (*list) = (*list)->next;				\
-	   (*list)->next = (item);				\
-	   (item)->next = NULL;					\
-	   (*list) = head;					\
-	}
+/*头部追加元素*/
+void SMB2_LIST_prepend(void *list, void *item);
 
-#define SMB2_LIST_REMOVE(list, item) \
-	if ((*list) == (item)) { 				\
-	   (*list) = (item)->next;				\
-	} else {						\
-	   void *head = (*list);				\
-	   while ((*list)->next && (*list)->next != (item))     \
-	     (*list) = (*list)->next;				\
-	   if ((*list)->next != NULL) {		    	    	\
-	      (*list)->next = (*list)->next->next;		\
-	   }  		      					\
-	   (*list) = head;					\
-	}
+/*尾部追加元素*/
+void SMB2_LIST_append(void *list, void *item);
 
-#define SMB2_LIST_LENGTH(list, length) \
-	do { \
-	    (length) = 0; \
-		void *head = (*list); \
-		while ((*list)) { \
-			(*list) = (*list)->next; \
-			(length)++; \
-		} \
-		(*list) = head; \
-	} while (0);
+/*从链表中移除指定元素*/
+void SMB2_LIST_remove(void *list, void *item);
+
+// /*获取链表长度*/
+// size_t SMB2_LIST_length(void *list);
 
 #endif /* __smb2_slist_h__ */

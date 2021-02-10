@@ -1,0 +1,32 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) 启动",
+            "type": "cppdbg",
+            "request": "launch",
+            "preLaunchTask":"build",
+            "program": "",
+            //"program": "${workspaceFolder}/examples/.libs/smb2-stat-sync",
+            //"program": "${workspaceFolder}/examples/.libs/smb2-ls-sync",
+            //"args": [ "--help" ],
+            "args": [ "smb://admin@192.168.0.10/test?credentials=/root/文档/credentials.txt" ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [{ "name": "LD_LIBRARY_PATH", "value": "$LD_LIBRARY_PATH:./lib/.libs"}
+            ],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "为 gdb 启用整齐打印",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

@@ -56,10 +56,10 @@
 
 #include "compat.h"
 
-#include "smb2.h"
-#include "libsmb2.h"
-#include "libsmb2-dcerpc.h"
-#include "libsmb2-raw.h"
+#include "smb2/smb2.h"
+#include "smb2/libsmb2.h"
+#include "smb2/libsmb2-dcerpc.h"
+#include "smb2/libsmb2-raw.h"
 #include "libsmb2-private.h"
 
 #define container_of(ptr, type, member) ({                      \
@@ -80,6 +80,9 @@ struct dcerpc_deferred_pointer {
  * https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-rpce/b1af93c7-f988-4a1a-ac74-063179942f32
  */
 
+#pragma GCC diagnostic push 
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"
+
 p_syntax_id_t ndr32_syntax = {
         {NDR32_UUID}, 2
 };
@@ -87,6 +90,7 @@ p_syntax_id_t ndr32_syntax = {
 p_syntax_id_t ndr64_syntax = {
         {NDR64_UUID}, 1
 };
+#pragma GCC diagnostic pop
 
 struct dcerpc_context {
         struct smb2_context *smb2;

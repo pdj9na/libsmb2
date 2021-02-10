@@ -2,38 +2,27 @@ AM_CFLAGS=$(WARN_CFLAGS)
 
 lib_LTLIBRARIES = libsmb2.la
 
-libsmb2_la_CPPFLAGS = -I$(abs_top_srcdir)/include \
-		      -I$(abs_top_srcdir)/include/smb2 \
-		      "-D_U_=__attribute__((unused))"
+libsmb2_la_CFLAGS="-D_U_=__attribute__((unused))"
+libsmb2_la_CPPFLAGS = -I$(top_srcdir)/include
 
 libsmb2_la_SOURCES = \
-	aes.h \
 	aes.c \
-	aes128ccm.h \
 	aes128ccm.c \
 	alloc.c \
 	compat.c \
-	compat.h \
 	dcerpc.c \
 	dcerpc-lsa.c \
 	dcerpc-srvsvc.c \
 	errors.c \
 	init.c \
 	hmac.c \
-	hmac-md5.h \
 	hmac-md5.c \
-	krb5-wrapper.h \
 	krb5-wrapper.c \
 	libsmb2.c \
-	md4.h \
 	md4c.c \
-	md5.h \
 	md5.c \
-	ntlmssp.h \
 	ntlmssp.c \
 	pdu.c \
-	sha.h \
-	sha-private.h \
 	sha1.c \
 	sha224-256.c \
 	sha384-512.c \
@@ -58,20 +47,19 @@ libsmb2_la_SOURCES = \
 	smb2-data-reparse-point.c \
 	smb2-data-security-descriptor.c \
 	smb2-share-enum.c \
-	smb3-seal.h \
 	smb3-seal.c \
-	smb2-signing.h \
 	smb2-signing.c \
 	socket.c \
 	sync.c \
 	timestamps.c \
 	unicode.c \
-	usha.c
+	usha.c \
+	slist.c
 
 SOCURRENT=3
 SOREVISION=0
 SOAGE=0
-libsmb2_la_LDFLAGS = \
+libsmb2_la_LDFLAGS = -pthread\
 	-version-info $(SOCURRENT):$(SOREVISION):$(SOAGE) -bindir $(bindir) \
 	-no-undefined -export-symbols ${srcdir}/libsmb2.syms $(MAYBE_LIBKRB5)
 

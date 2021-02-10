@@ -33,3 +33,7 @@ stamp-h1
 libsmb2.pc
 libtool
 ltmain.sh
+!.vscode
+/examples/*
+!/example/Makefile.am
+!/example/*.c

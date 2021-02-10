@@ -48,9 +48,10 @@
 #endif
 
 #include "compat.h"
+#include <errno.h>
 
-#include <smb2.h>
-#include <libsmb2.h>
+#include <smb2/smb2.h>
+#include <smb2/libsmb2.h>
 #include "libsmb2-private.h"
 
 #define container_of(ptr, type, member) ({                      \
@@ -94,6 +95,7 @@ smb2_alloc_data(struct smb2_context *smb2, void *memctx, size_t size)
         ptr = calloc(size, 1);
         if (ptr == NULL) {
                 smb2_set_error(smb2, "Failed to alloc %zu bytes", size);
+                errno=ENOMEM;
                 return NULL;
         }
 
@@ -109,7 +111,7 @@ smb2_alloc_data(struct smb2_context *smb2, void *memctx, size_t size)
         ptr->next = hdr->mem;
         hdr->mem = ptr;
 
-        return &ptr->buf[0];
+        return ptr->buf;
 }
 
 void

@@ -24,9 +24,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "smb2.h"
-#include "libsmb2.h"
-#include "libsmb2-raw.h"
+#include "smb2/smb2.h"
+#include "smb2/libsmb2.h"
+#include "smb2/libsmb2-raw.h"
 
 #define MAXBUF 16 * 1024 * 1024
 uint8_t buf[MAXBUF];

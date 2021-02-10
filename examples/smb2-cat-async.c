@@ -23,9 +23,9 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <sys/types.h>
 #include <unistd.h>
 
-#include "smb2.h"
-#include "libsmb2.h"
-#include "libsmb2-raw.h"
+#include "smb2/smb2.h"
+#include "smb2/libsmb2.h"
+#include "smb2/libsmb2-raw.h"
 
 int is_finished;
 uint8_t buf[256 * 1024];

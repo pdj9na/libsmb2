@@ -44,8 +44,8 @@
 #include "compat.h"
 
 #include "slist.h"
-#include "smb2.h"
-#include "libsmb2.h"
+#include "smb2/smb2.h"
+#include "smb2/libsmb2.h"
 #include "libsmb2-private.h"
 
 static struct smb2_sid *
@@ -246,6 +246,7 @@ decode_acl(struct smb2_context *smb2, void *memctx, struct smb2_iovec *vec)
         }
 
         acl = smb2_alloc_data(smb2, memctx, sizeof(struct smb2_acl));
+        //smb2_free_data(smb2,acl);
         if (acl == NULL) {
                 smb2_set_error(smb2, "failed to allocate acl.");
                 return NULL;
@@ -275,7 +276,7 @@ decode_acl(struct smb2_context *smb2, void *memctx, struct smb2_iovec *vec)
                 v.len -= ace->ace_size;
                 v.buf = &v.buf[ace->ace_size];
 
-                SMB2_LIST_ADD_END(&acl->aces, ace);
+                //SMB2_LIST_append(&acl->aces, ace,&acl->mutex_aces);
         }
 
         return acl;

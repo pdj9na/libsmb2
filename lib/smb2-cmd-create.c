@@ -43,14 +43,12 @@
 
 #include "compat.h"
 
-#include "smb2.h"
-#include "libsmb2.h"
+#include "smb2/smb2.h"
+#include "smb2/libsmb2.h"
 #include "libsmb2-private.h"
 
-static int
-smb2_encode_create_request(struct smb2_context *smb2,
-                           struct smb2_pdu *pdu,
-                           struct smb2_create_request *req)
+static int smb2_encode_create_request(struct smb2_context *smb2,
+        struct smb2_pdu *pdu, struct smb2_create_request *req)
 {
         int i, len;
         uint8_t *buf;
@@ -62,6 +60,7 @@ smb2_encode_create_request(struct smb2_context *smb2,
         buf = calloc(len, sizeof(uint8_t));
         if (buf == NULL) {
                 smb2_set_error(smb2, "Failed to allocate create buffer");
+                errno=ENOMEM;
                 return -1;
         }
         
@@ -98,6 +97,7 @@ smb2_encode_create_request(struct smb2_context *smb2,
                 if (buf == NULL) {
                         smb2_set_error(smb2, "Failed to allocate create name");
                         free(name);
+                        errno=ENOMEM;
                         return -1;
                 }
                 memcpy(buf, &name->val[0], 2 * name->len);
@@ -118,6 +118,7 @@ smb2_encode_create_request(struct smb2_context *smb2,
         /* Create Context */
         if (req->create_context_length) {
                 smb2_set_error(smb2, "Create context not implemented, yet");
+                errno=EINVAL;
                 return -1;
         }
 
@@ -134,8 +135,7 @@ smb2_encode_create_request(struct smb2_context *smb2,
         return 0;
 }
 
-struct smb2_pdu *
-smb2_cmd_create_async(struct smb2_context *smb2,
+struct smb2_pdu *smb2_cmd_create_async(struct smb2_context *smb2,
                       struct smb2_create_request *req,
                       smb2_command_cb cb, void *cb_data)
 {
@@ -151,7 +151,7 @@ smb2_cmd_create_async(struct smb2_context *smb2,
                 return NULL;
         }
         
-        if (smb2_pad_to_64bit(smb2, &pdu->out) != 0) {
+        if (smb2_pad_to_64bit(smb2, &pdu->out)) {
                 smb2_free_pdu(smb2, pdu);
                 return NULL;
         }
